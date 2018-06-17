@@ -1,0 +1,110 @@
+map $http_upgrade $connection_upgrade {
+	default upgrade;
+	'' close;
+}
+
+upstream websocket {
+	server 127.0.0.1:5050;
+}
+
+server {
+        listen 80;
+
+        root /home/lion/laiyoga2-master/public;
+        index index.html;
+
+        server_name *.laiyujia.com *.laiyoga.com *.hcforce.com;
+        location ^~ /api {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+        location ^~ /wechat {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+        location /doc/ {
+                alias /usr/share/doc/;
+                autoindex on;
+                allow 127.0.0.1;
+                allow ::1;
+                deny all;
+        }
+
+	location /upload/ {
+           root  /home/lion/laiyoga_upload/;
+           access_log /home/lion/tmpData/log/domain_upload.log;
+           autoindex on;
+      }
+
+
+        error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+                root /usr/share/nginx/html;
+        }
+
+        location ~ .php$ {
+                try_files $uri =404;
+                fastcgi_pass 127.0.0.1:9000;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_index index.php;
+                include fastcgi_params;
+        }
+
+        location ~ /.ht {
+                deny all;
+        }
+}
+
+
+
+server {
+    listen 80;
+    server_name img.hcforce.com;
+    root /home/lion/images;
+    error_log /home/lion/tmpData/log/images_error.log;
+    access_log /home/lion/tmpData/log/images_access.log;
+    location / {
+        if ($uri ~ \.(css|gif|js|png|jpg|jpeg)$) {
+            expires 7d;
+        }
+    }
+}
+
+
+server {
+        listen       80;
+        server_name  www.wp.com;
+
+        error_log /home/lion/tmpData/log/error.log;
+        access_log /home/lion/tmpData/log/access.log;
+
+        #charset koi8-r;
+
+        #access_log  logs/host.access.log  main;
+
+        location / {
+            root   /home/lion/www_wp;
+            index  index.html index.htm index.php;
+            if (!-e $request_filename) {
+              rewrite  ^(.*)$  /index.php?s=$1  last;
+              break;
+            }
+        }
+
+        #error_page  404              /404.html;
+
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        location ~ \.php$ {
+            root           /home/lion/www_wp;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            include        fastcgi_params;
+        }
+}
